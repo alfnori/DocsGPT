@@ -405,6 +405,25 @@ ensure_internal_key() {
     fi
 }
 
+# Install pgvector in running container if VECTOR_STORE=pgvector
+install_pgvector_in_container() {
+    if grep -q "^VECTOR_STORE=pgvector" "$ENV_FILE" 2>/dev/null; then
+        echo -e "${YELLOW}Detected pgvector as vector store. Installing pgvector Python package in container...${NC}"
+        local backend_container
+        backend_container=$(docker compose -f "$COMPOSE_FILE" ps --services --filter "status=running" 2>/dev/null | grep -E "^backend$" | head -1)
+        if [ -n "$backend_container" ]; then
+            docker compose -f "$COMPOSE_FILE" exec -T backend pip install --no-cache-dir pgvector >/dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}pgvector installed successfully in backend container.${NC}"
+            else
+                echo -e "${RED}Failed to install pgvector. Please install manually: docker compose exec backend pip install pgvector${NC}"
+            fi
+        else
+            echo -e "${YELLOW}Backend container not running. pgvector will be installed when container starts.${NC}"
+        fi
+    fi
+}
+
 # Main advanced settings menu
 prompt_advanced_settings() {
     ensure_internal_key
@@ -461,6 +480,8 @@ use_docs_public_api_endpoint() {
         echo -e "${RED}Refer to Docker documentation for installation instructions: https://docs.docker.com/compose/install/${NC}"
         exit 1 # Indicate failure and EXIT SCRIPT
     fi
+
+    install_pgvector_in_container
 
     echo -e "\n${GREEN}DocsGPT is now running on http://localhost:5173${NC}"
     echo -e "${YELLOW}You can stop the application by running: docker compose -f \"${COMPOSE_FILE}\" down${NC}"
@@ -539,6 +560,8 @@ serve_local_ollama() {
         echo -e "${RED}Refer to Docker documentation for installation instructions: https://docs.docker.com/compose/install/${NC}"
         exit 1 # Indicate failure and EXIT SCRIPT
     fi
+
+    install_pgvector_in_container
 
     echo "Waiting for Ollama container to be ready..."
     OLLAMA_READY=false
@@ -649,6 +672,8 @@ connect_local_inference_engine() {
         exit 1 # Indicate failure and EXIT SCRIPT
     fi
 
+    install_pgvector_in_container
+
     echo -e "\n${GREEN}DocsGPT is now configured to connect to ${BOLD}${engine_name}${NC}${GREEN} at ${BOLD}$openai_base_url${NC}"
     echo -e "${YELLOW}Ensure your ${BOLD}${engine_name} inference server is running at that address${NC}"
     echo -e "\n${GREEN}DocsGPT is running at http://localhost:5173${NC}"
@@ -753,6 +778,8 @@ connect_cloud_api_provider() {
         echo -e "${RED}Refer to Docker documentation for installation instructions: https://docs.docker.com/compose/install/${NC}"
         exit 1 # Indicate failure and EXIT SCRIPT
     fi
+
+    install_pgvector_in_container
 
     echo -e "\n${GREEN}DocsGPT is now configured to use ${BOLD}${provider_name}${NC}${GREEN} on http://localhost:5173${NC}"
     echo -e "${YELLOW}You can stop the application by running: docker compose -f \"${COMPOSE_FILE}\" down${NC}"

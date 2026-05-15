@@ -5,6 +5,8 @@ __pycache__/
 results.txt
 experiments/
 
+.history
+
 experiments
 # C extensions
 *.so
