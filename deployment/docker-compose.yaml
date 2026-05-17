@@ -12,6 +12,7 @@ services:
       - "5173:5173"
     depends_on:
       - backend
+    restart: unless-stopped
 
   backend:
     user: root
@@ -35,6 +36,7 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
+    restart: unless-stopped
 
   worker:
     user: root
@@ -58,11 +60,13 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
+    restart: unless-stopped
 
   redis:
     image: redis:6-alpine
     ports:
       - 6379:6379
+    restart: unless-stopped
 
   postgres:
     image: pgvector/pgvector:pg16
@@ -80,6 +84,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
 volumes:
   postgres_data:
